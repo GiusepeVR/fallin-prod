@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>FALLIN</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; font-family: 'Bebas Neue', cursive; }
+  #c { display: block; width: 100vw; height: 100vh; }
+  #hud {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10;
+  }
+  #hud-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 16px 20px;
+  }
+  .hud-box {
+    background: #000; color: #fff; border: 3px solid #fff;
+    padding: 4px 14px; font-size: 22px; letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  #banner {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #000; color: #fff; border: 5px solid #fff;
+    padding: 20px 40px; font-size: 48px; letter-spacing: 4px;
+    text-align: center; z-index: 20; display: none;
+    pointer-events: auto; cursor: pointer;
+  }
+  #banner .banner-sub {
+    font-size: 18px; letter-spacing: 2px; margin-top: 8px;
+    color: #aaa;
+  }
+  #gyro-btn {
+    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+    background: #000; color: #fff; border: 4px solid #fff;
+    padding: 14px 36px; font-family: 'Bebas Neue', cursive;
+    font-size: 28px; letter-spacing: 3px; cursor: pointer;
+    z-index: 30; display: none;
+  }
+  #start-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #000; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 50;
+  }
+  #start-screen h1 {
+    font-size: 96px; letter-spacing: 8px; color: #fff;
+    text-shadow: 6px 6px 0 #ff0066;
+  }
+  #start-screen p {
+    font-size: 22px; color: #aaa; margin: 10px 0 40px;
+    letter-spacing: 2px;
+  }
+  #start-btn {
+    background: #ff0066; color: #fff; border: 4px solid #fff;
+    padding: 16px 48px; font-family: 'Bebas Neue', cursive;
+    font-size: 32px; letter-spacing: 4px; cursor: pointer;
+  }
+  #start-btn:active { background: #cc0044; }
+
+  /* Virtual joystick */
+  #joystick-zone {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    width: 160px; height: 160px; z-index: 25; display: none;
+    pointer-events: auto; touch-action: none;
+  }
+  #joystick-base {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    border: 3px solid rgba(255,255,255,0.4);
+    border-radius: 50%; background: rgba(0,0,0,0.25);
+  }
+  #joystick-knob {
+    position: absolute; width: 56px; height: 56px;
+    border: 3px solid #fff; border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  /* Level transition blur overlay */
+  #blur-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0); z-index: 15;
+    pointer-events: none; opacity: 0;
+    backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);
+    transition: backdrop-filter 0.5s ease, -webkit-backdrop-filter 0.5s ease,
+                background 0.5s ease, opacity 0.1s ease;
+  }
+  #blur-overlay.active {
+    opacity: 1;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  #https-warn {
+    position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+    background: #ff0066; color: #fff; padding: 8px 18px;
+    font-family: 'Bebas Neue', cursive; font-size: 16px;
+    letter-spacing: 1px; z-index: 40; display: none;
+    border-radius: 4px; text-align: center; max-width: 90vw;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div id="hud-top">
+    <div class="hud-box" id="hud-level">LVL 1</div>
+    <div class="hud-box" id="hud-orbs">ORBS 0/0</div>
+  </div>
+  <div style="display:flex;justify-content:center;padding:0 20px;">
+    <div class="hud-box" id="hud-time" style="font-size:18px;padding:2px 10px;">TIME 0s</div>
+    <div class="hud-box" id="hud-score" style="font-size:18px;padding:2px 10px;margin-left:8px;">SCORE 0</div>
+  </div>
+</div>
+
+<div id="blur-overlay"></div>
+<div id="banner"></div>
+
+<button id="gyro-btn">ENABLE TILT</button>
+
+<div id="joystick-zone">
+  <div id="joystick-base"></div>
+  <div id="joystick-knob"></div>
+</div>
+
+<div id="https-warn">TILT REQUIRES HTTPS — USING JOYSTICK INSTEAD</div>
+
+<div id="start-screen">
+  <h1>FALLIN</h1>
+  <p>TILT TO ROLL — REACH THE EXIT</p>
+  <button id="start-btn" id="start-btn">PLAY</button>
+</div>
+
+<script>
+// ─── 1. CONFIG ───────────────────────────────────────────────────────────────
+const CONFIG = {
+  TILT_FORCE:     110,
+  FRICTION:       0.91,
+  MAX_SPEED:      72,
+  BALL_RADIUS:    0.45,
+  WALL_HEIGHT:    3,
+  WALL_THICKNESS: 0.3,
+  CELL_SIZE:      4,
+  ORB_RADIUS:     0.3,
+  ORB_COLLECT_DIST: 0.9,
+  EXIT_RADIUS:    0.8,
+  CAM_HEIGHT:     22,
+  CAM_TILT:       -Math.PI / 2.8,
+  OUTLINE_SCALE:  1.06,
+  DOT_RADIUS:     0.08,
+  DOT_SPACING:    1.0,
+  DOT_HEIGHT:     0.04,
+  // Camera lead — offsets based on ball velocity
+  CAM_LEAD_X:     0.18,   // how much camera pans ahead horizontally
+  CAM_LEAD_Z:     0.14,   // how much camera dollies ahead vertically
+  CAM_LERP:       0.06,   // smoothing factor (lower = more cinematic lag)
+};
+
+// ─── 2. PALETTES ─────────────────────────────────────────────────────────────
+const PALETTES = [
+  { bg:'#ffe600', floor:'#ffe600', wall:'#0033cc', ball:'#ff0066', orb:'#ff6600', exit:'#00cc44' },
+  { bg:'#ff0066', floor:'#ff0066', wall:'#000000', ball:'#ffe600', orb:'#00ccff', exit:'#ffffff' },
+  { bg:'#00ccff', floor:'#00ccff', wall:'#ff0066', ball:'#000000', orb:'#ffe600', exit:'#0033cc' },
+  { bg:'#0033cc', floor:'#0033cc', wall:'#ffe600', ball:'#ff0066', orb:'#ffffff', exit:'#00ccff' },
+  { bg:'#ff6600', floor:'#ff6600', wall:'#0033cc', ball:'#ffffff', orb:'#ffe600', exit:'#ff0066' },
+  { bg:'#00cc44', floor:'#00cc44', wall:'#000000', ball:'#ff0066', orb:'#ffe600', exit:'#0033cc' },
+];
+
+// ─── 2b. PROCEDURAL AUDIO ────────────────────────────────────────────────
+let audioCtx = null;
+let musicPlaying = false;
+
+// Pentatonic scale notes (C minor pentatonic across octaves)
+const PENTA = [130.81,155.56,174.61,207.65,233.08, // C3 Eb3 F3 G3 Bb3
+               261.63,311.13,349.23,415.30,466.16, // C4 Eb4 F4 G4 Bb4
+               523.25,622.25,698.46];               // C5 Eb5 F5
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // Master gain
+  const master = audioCtx.createGain();
+  master.gain.value = 0.30;
+  master.connect(audioCtx.destination);
+
+  // NO continuous oscillators — everything is percussive / short-lived
+
+  // Current root note index (shifted per level)
+  let currentRoot = 0;
+
+  // --- Rhythmic engine (128 BPM, energetic) ---
+  let pulsePhase = 0;
+  const PULSE_BPM = 128;
+  const pulseInterval = 60 / PULSE_BPM;
+
+  function schedulePulse() {
+    if (!musicPlaying) return;
+    const now = audioCtx.currentTime;
+    const beat = pulsePhase % 4; // 0,1,2,3 within a bar
+
+    // Kick on beats 0 and 2 (four-on-the-floor feel at half rate)
+    if (beat === 0 || beat === 2) {
+      const kickOsc = audioCtx.createOscillator();
+      const kickGain = audioCtx.createGain();
+      kickOsc.type = 'sine';
+      kickOsc.frequency.setValueAtTime(160, now);
+      kickOsc.frequency.exponentialRampToValueAtTime(30, now + 0.07);
+      kickGain.gain.setValueAtTime(0.18, now);
+      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.10);
+      kickOsc.connect(kickGain);
+      kickGain.connect(master);
+      kickOsc.start(now);
+      kickOsc.stop(now + 0.10);
+    }
+
+    // Snappy hi-hat on every beat
+    const noise = audioCtx.createBufferSource();
+    const noiseBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.025, audioCtx.sampleRate);
+    const noiseData = noiseBuf.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
+    noise.buffer = noiseBuf;
+    const hhGain = audioCtx.createGain();
+    const hhFilter = audioCtx.createBiquadFilter();
+    hhFilter.type = 'highpass';
+    hhFilter.frequency.value = 9000;
+    const hhVol = (beat === 1 || beat === 3) ? 0.07 : 0.04; // accented off-beats
+    hhGain.gain.setValueAtTime(hhVol, now);
+    hhGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+    noise.connect(hhFilter);
+    hhFilter.connect(hhGain);
+    hhGain.connect(master);
+    noise.start(now);
+
+    // Bass hit on beats 0 and 2 — short percussive thump, NOT sustained
+    if (beat === 0 || beat === 2) {
+      const bassOsc = audioCtx.createOscillator();
+      const bassGain = audioCtx.createGain();
+      bassOsc.type = 'sine';
+      bassOsc.frequency.value = PENTA[currentRoot];
+      bassGain.gain.setValueAtTime(0.12, now);
+      bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      bassOsc.connect(bassGain);
+      bassGain.connect(master);
+      bassOsc.start(now);
+      bassOsc.stop(now + 0.15);
+    }
+
+    // Melodic stab every 4 beats — short chord hit
+    if (pulsePhase % 4 === 0) {
+      const chordNotes = [PENTA[currentRoot + 5], PENTA[currentRoot + 7 < PENTA.length ? currentRoot + 7 : currentRoot + 2]];
+      chordNotes.forEach(freq => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      });
+    }
+
+    pulsePhase++;
+    setTimeout(schedulePulse, pulseInterval * 1000);
+  }
+
+  // --- Arpeggio — velocity-reactive, short staccato notes ---
+  let arpInterval = null;
+  function startArp() {
+    if (arpInterval) return;
+    arpInterval = setInterval(() => {
+      if (!musicPlaying || gamePaused) return;
+      const speed = Math.sqrt(vx * vx + vz * vz);
+      if (speed < CONFIG.MAX_SPEED * 0.2) return;
+      if (Math.random() > 0.45) return;
+
+      const now = audioCtx.currentTime;
+      const noteIdx = 5 + Math.floor(Math.random() * 5);
+      const freq = PENTA[noteIdx];
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const vol = 0.03 + (speed / CONFIG.MAX_SPEED) * 0.04;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    }, 160);
+  }
+
+  // --- Shift root on level change ---
+  window._musicShiftLevel = (levelNum) => {
+    currentRoot = (levelNum - 1) % 5;
+  };
+
+  // --- Orb collect sound (rising chime — sine, gentle) ---
+  window._musicOrbCollect = () => {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const freq = PENTA[7 + Math.floor(Math.random() * 4)];
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.linearRampToValueAtTime(freq * 1.4, now + 0.12);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  };
+
+  // --- Level complete fanfare ---
+  window._musicLevelComplete = () => {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    [0, 5, 7, 10].forEach((idx, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = PENTA[idx % PENTA.length];
+      gain.gain.setValueAtTime(0, now + i * 0.12);
+      gain.gain.linearRampToValueAtTime(0.08, now + i * 0.12 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.3);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(now + i * 0.12);
+      osc.stop(now + i * 0.12 + 0.3);
+    });
+  };
+
+  musicPlaying = true;
+  schedulePulse();
+  startArp();
+}
+
+// ─── 3. MAZE GENERATION ──────────────────────────────────────────────────────
+function generateMaze(cols, rows) {
+  const grid = [];
+  for (let z = 0; z < rows; z++) {
+    for (let x = 0; x < cols; x++) {
+      grid.push({ x, z, walls: { N: true, S: true, E: true, W: true }, visited: false });
+    }
+  }
+  const idx = (x, z) => z * cols + x;
+  const cell = (x, z) => (x >= 0 && x < cols && z >= 0 && z < rows) ? grid[idx(x, z)] : null;
+
+  const stack = [];
+  const start = grid[0];
+  start.visited = true;
+  stack.push(start);
+
+  // BFS distance map for farthest cell
+  const dist = new Array(cols * rows).fill(-1);
+  dist[0] = 0;
+
+  while (stack.length > 0) {
+    const cur = stack[stack.length - 1];
+    const neighbors = [];
+    const dirs = [
+      { dx: 0, dz: -1, wall: 'N', opp: 'S' },
+      { dx: 0, dz:  1, wall: 'S', opp: 'N' },
+      { dx: 1, dz:  0, wall: 'E', opp: 'W' },
+      { dx:-1, dz:  0, wall: 'W', opp: 'E' },
+    ];
+    for (const d of dirs) {
+      const nb = cell(cur.x + d.dx, cur.z + d.dz);
+      if (nb && !nb.visited) neighbors.push({ nb, d });
+    }
+    if (neighbors.length > 0) {
+      const { nb, d } = neighbors[Math.floor(Math.random() * neighbors.length)];
+      cur.walls[d.wall] = false;
+      nb.walls[d.opp] = false;
+      nb.visited = true;
+      stack.push(nb);
+    } else {
+      stack.pop();
+    }
+  }
+
+  // BFS from start to find farthest cell
+  const queue = [0];
+  dist[0] = 0;
+  let farthestIdx = 0;
+  const visited2 = new Array(cols * rows).fill(false);
+  visited2[0] = true;
+  while (queue.length > 0) {
+    const ci = queue.shift();
+    const cx = ci % cols, cz = Math.floor(ci / cols);
+    const c = grid[ci];
+    const dirs2 = [
+      { dx: 0, dz: -1, wall: 'N' },
+      { dx: 0, dz:  1, wall: 'S' },
+      { dx: 1, dz:  0, wall: 'E' },
+      { dx:-1, dz:  0, wall: 'W' },
+    ];
+    for (const d of dirs2) {
+      if (!c.walls[d.wall]) {
+        const ni = idx(cx + d.dx, cz + d.dz);
+        if (!visited2[ni]) {
+          visited2[ni] = true;
+          dist[ni] = dist[ci] + 1;
+          if (dist[ni] > dist[farthestIdx]) farthestIdx = ni;
+          queue.push(ni);
+        }
+      }
+    }
+  }
+
+  // Dead ends: cells with exactly 1 open wall
+  const deadEnds = grid.filter(c => {
+    const open = ['N','S','E','W'].filter(w => !c.walls[w]).length;
+    return open === 1;
+  });
+
+  const exitCell = grid[farthestIdx];
+  return { grid, cols, rows, start: { x: 0, z: 0 }, exit: exitCell, deadEnds };
+}
+
+// ─── 4. THREE.JS SCENE SETUP ─────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = false;
+renderer.setClearColor(0x000000, 1); // match start screen bg, prevents flash
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+
+// Lights
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+dirLight.position.set(10, 20, 10);
+scene.add(dirLight);
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// ─── 5. BUILD LEVEL ──────────────────────────────────────────────────────────
+let levelGroup = null;
+let ballMesh = null, ballOutlineMesh = null;
+let orbMeshes = [];
+let exitMesh = null, exitOutlineMesh = null;
+let portalRing = null;
+
+function makeToon(color, opts = {}) {
+  return new THREE.MeshToonMaterial({ color: new THREE.Color(color), ...opts });
+}
+function makeOutline(geo, scale = CONFIG.OUTLINE_SCALE) {
+  const mat = new THREE.MeshToonMaterial({ color: 0x000000, side: THREE.BackSide });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.scale.setScalar(scale);
+  return mesh;
+}
+
+function buildLevel(mazeData, palette) {
+  if (levelGroup) {
+    scene.remove(levelGroup);
+    levelGroup.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) {
+        if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+        else o.material.dispose();
+      }
+    });
+  }
+  levelGroup = new THREE.Group();
+  scene.add(levelGroup);
+  scene.background = new THREE.Color(palette.bg);
+
+  const { grid, cols, rows, exit, deadEnds } = mazeData;
+  const CS = CONFIG.CELL_SIZE;
+  const WH = CONFIG.WALL_HEIGHT;
+  const WT = CONFIG.WALL_THICKNESS;
+
+  // Offset so maze is centered
+  const offX = -(cols * CS) / 2;
+  const offZ = -(rows * CS) / 2;
+
+  // Floor
+  const floorGeo = new THREE.PlaneGeometry(cols * CS, rows * CS);
+  const floorMat = makeToon(palette.floor);
+  const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+  floorMesh.rotation.x = -Math.PI / 2;
+  floorMesh.position.set(0, 0, 0);
+  levelGroup.add(floorMesh);
+
+  // Lichtenstein dot pattern on floor
+  const dotGeo = new THREE.CylinderGeometry(CONFIG.DOT_RADIUS, CONFIG.DOT_RADIUS, CONFIG.DOT_HEIGHT, 6);
+  const dotColor = new THREE.Color(palette.floor);
+  dotColor.offsetHSL(0, 0, -0.12);
+  const dotMat = new THREE.MeshToonMaterial({ color: dotColor });
+  const dotSpacing = CONFIG.DOT_SPACING;
+  const dotCountX = Math.floor((cols * CS) / dotSpacing);
+  const dotCountZ = Math.floor((rows * CS) / dotSpacing);
+  const dotDummy = new THREE.Object3D();
+  const dotInstanced = new THREE.InstancedMesh(dotGeo, dotMat, dotCountX * dotCountZ);
+  let di = 0;
+  for (let dx = 0; dx < dotCountX; dx++) {
+    for (let dz = 0; dz < dotCountZ; dz++) {
+      dotDummy.position.set(
+        offX + dx * dotSpacing + dotSpacing / 2,
+        0.02,
+        offZ + dz * dotSpacing + dotSpacing / 2
+      );
+      dotDummy.updateMatrix();
+      dotInstanced.setMatrixAt(di++, dotDummy.matrix);
+    }
+  }
+  dotInstanced.instanceMatrix.needsUpdate = true;
+  levelGroup.add(dotInstanced);
+
+  // Walls — collect all wall boxes, merge for performance
+  const wallMat = makeToon(palette.wall);
+  const wallOutlineMat = new THREE.MeshToonMaterial({ color: 0x000000, side: THREE.BackSide });
+  const wallMeshes = [];
+  const wallOutlines = [];
+
+  for (const c of grid) {
+    const cx = offX + c.x * CS + CS / 2;
+    const cz = offZ + c.z * CS + CS / 2;
+
+    // North wall (z- edge)
+    if (c.walls.N) {
+      const geo = new THREE.BoxGeometry(CS + WT, WH, WT);
+      const m = new THREE.Mesh(geo, wallMat);
+      m.position.set(cx, WH / 2, offZ + c.z * CS);
+      wallMeshes.push(m);
+      const o = makeOutline(geo);
+      o.position.copy(m.position);
+      wallOutlines.push(o);
+    }
+    // West wall (x- edge)
+    if (c.walls.W) {
+      const geo = new THREE.BoxGeometry(WT, WH, CS + WT);
+      const m = new THREE.Mesh(geo, wallMat);
+      m.position.set(offX + c.x * CS, WH / 2, cz);
+      wallMeshes.push(m);
+      const o = makeOutline(geo);
+      o.position.copy(m.position);
+      wallOutlines.push(o);
+    }
+    // South wall — only for last row
+    if (c.walls.S && c.z === rows - 1) {
+      const geo = new THREE.BoxGeometry(CS + WT, WH, WT);
+      const m = new THREE.Mesh(geo, wallMat);
+      m.position.set(cx, WH / 2, offZ + (c.z + 1) * CS);
+      wallMeshes.push(m);
+      const o = makeOutline(geo);
+      o.position.copy(m.position);
+      wallOutlines.push(o);
+    }
+    // East wall — only for last col
+    if (c.walls.E && c.x === cols - 1) {
+      const geo = new THREE.BoxGeometry(WT, WH, CS + WT);
+      const m = new THREE.Mesh(geo, wallMat);
+      m.position.set(offX + (c.x + 1) * CS, WH / 2, cz);
+      wallMeshes.push(m);
+      const o = makeOutline(geo);
+      o.position.copy(m.position);
+      wallOutlines.push(o);
+    }
+  }
+
+  // Add walls to group (store refs for collision)
+  for (const m of wallMeshes) levelGroup.add(m);
+  // Skip outline meshes for walls — not visible from top-down and costly at large maze sizes
+
+  // Store wall AABBs for collision — computed directly from position+geometry size (faster than setFromObject)
+  wallAABBs = [];
+  for (const m of wallMeshes) {
+    const hw = m.geometry.parameters.width / 2;
+    const hd = m.geometry.parameters.depth / 2;
+    const px = m.position.x, pz = m.position.z;
+    wallAABBs.push(new THREE.Box3(
+      new THREE.Vector3(px - hw, 0, pz - hd),
+      new THREE.Vector3(px + hw, CONFIG.WALL_HEIGHT, pz + hd)
+    ));
+  }
+
+  // Orbs — place in dead ends (excluding start and exit)
+  orbMeshes = [];
+  const orbGeo = new THREE.SphereGeometry(CONFIG.ORB_RADIUS, 8, 8);
+  const orbMat = makeToon(palette.orb, { emissive: new THREE.Color(palette.orb), emissiveIntensity: 0.4 });
+  const orbOutlineMat = new THREE.MeshToonMaterial({ color: 0x000000, side: THREE.BackSide });
+
+  const exitKey = `${exit.x},${exit.z}`;
+  const orbCells = deadEnds.filter(c => !(c.x === 0 && c.z === 0) && `${c.x},${c.z}` !== exitKey);
+
+  for (const c of orbCells) {
+    const ox = offX + c.x * CS + CS / 2;
+    const oz = offZ + c.z * CS + CS / 2;
+    const om = new THREE.Mesh(orbGeo, orbMat);
+    om.position.set(ox, CONFIG.BALL_RADIUS + 0.3, oz);
+    om.userData.collected = false;
+    om.userData.worldX = ox;
+    om.userData.worldZ = oz;
+    levelGroup.add(om);
+    const oo = makeOutline(orbGeo);
+    oo.position.copy(om.position);
+    levelGroup.add(oo);
+    om.userData.outline = oo;
+    orbMeshes.push(om);
+  }
+
+  // Exit portal
+  const exitX = offX + exit.x * CS + CS / 2;
+  const exitZ = offZ + exit.z * CS + CS / 2;
+  const exitGeo = new THREE.CylinderGeometry(CONFIG.EXIT_RADIUS, CONFIG.EXIT_RADIUS, 0.2, 16);
+  const exitMat = makeToon(palette.exit, { emissive: new THREE.Color(palette.exit), emissiveIntensity: 0.6 });
+  exitMesh = new THREE.Mesh(exitGeo, exitMat);
+  exitMesh.position.set(exitX, 0.1, exitZ);
+  levelGroup.add(exitMesh);
+
+  const exitOutGeo = new THREE.CylinderGeometry(CONFIG.EXIT_RADIUS * 1.3, CONFIG.EXIT_RADIUS * 1.3, 0.25, 16);
+  exitOutlineMesh = new THREE.Mesh(exitOutGeo, new THREE.MeshToonMaterial({ color: 0x000000 }));
+  exitOutlineMesh.position.set(exitX, 0.08, exitZ);
+  levelGroup.add(exitOutlineMesh);
+
+  // Portal ring (spinning torus)
+  const ringGeo = new THREE.TorusGeometry(CONFIG.EXIT_RADIUS * 1.1, 0.12, 8, 24);
+  const ringMat = makeToon(palette.exit);
+  portalRing = new THREE.Mesh(ringGeo, ringMat);
+  portalRing.position.set(exitX, 1.0, exitZ);
+  levelGroup.add(portalRing);
+
+  // Ball
+  const ballGeo = new THREE.SphereGeometry(CONFIG.BALL_RADIUS, 12, 12);
+  const ballMat = makeToon(palette.ball);
+  ballMesh = new THREE.Mesh(ballGeo, ballMat);
+  ballMesh.position.set(offX + CS / 2, CONFIG.BALL_RADIUS, offZ + CS / 2);
+  scene.add(ballMesh);
+
+  ballOutlineMesh = makeOutline(ballGeo);
+  ballOutlineMesh.position.copy(ballMesh.position);
+  scene.add(ballOutlineMesh);
+
+  // Store maze offset for physics
+  mazeOffset = { x: offX, z: offZ };
+  mazeSize = { cols, rows };
+  exitWorldPos = { x: exitX, z: exitZ };
+
+  return { offX, offZ };
+}
+
+// ─── 6. PHYSICS STATE ────────────────────────────────────────────────────────
+let vx = 0, vz = 0;
+let ax = 0, az = 0;
+let wallAABBs = [];
+let mazeOffset = { x: 0, z: 0 };
+let mazeSize = { cols: 5, rows: 5 };
+let exitWorldPos = { x: 0, z: 0 };
+let currentLevel = 1;
+let orbsCollected = 0;
+let totalOrbs = 0;
+let gyroActive = false;
+let gyroHasData = false; // true only after real gyro values arrive
+let gamePaused = true;
+let transitioning = false;
+
+// Score state
+let totalScore = 0;
+let levelStartTime = 0;
+let levelElapsed = 0;
+
+// Screen shake
+let shakeX = 0, shakeZ = 0;
+let shakeDecay = 0;
+
+// Touch drag state
+let touchStartX = 0, touchStartY = 0;
+let touchDX = 0, touchDY = 0;
+let touchActive = false;
+
+// Camera lead (smoothed offset based on velocity)
+let camLeadX = 0, camLeadZ = 0;
+
+// ─── 7. UPDATE BALL (physics tick) ───────────────────────────────────────────
+function updateBall(dt) {
+  if (!ballMesh || gamePaused) return;
+
+  // Apply acceleration
+  vx += ax * CONFIG.TILT_FORCE * dt;
+  vz += az * CONFIG.TILT_FORCE * dt;
+
+  // Friction
+  vx *= CONFIG.FRICTION;
+  vz *= CONFIG.FRICTION;
+
+  // Clamp speed
+  const speed = Math.sqrt(vx * vx + vz * vz);
+  if (speed > CONFIG.MAX_SPEED) {
+    vx = (vx / speed) * CONFIG.MAX_SPEED;
+    vz = (vz / speed) * CONFIG.MAX_SPEED;
+  }
+
+  // Proposed new position
+  let nx = ballMesh.position.x + vx * dt;
+  let nz = ballMesh.position.z + vz * dt;
+
+  // AABB collision with walls
+  const br = CONFIG.BALL_RADIUS;
+  const ballBox = new THREE.Box3(
+    new THREE.Vector3(nx - br, 0, nz - br),
+    new THREE.Vector3(nx + br, CONFIG.WALL_HEIGHT, nz + br)
+  );
+
+  for (const wall of wallAABBs) {
+    if (ballBox.intersectsBox(wall)) {
+      // Resolve on X axis
+      const ballBoxX = new THREE.Box3(
+        new THREE.Vector3(nx - br, 0, ballMesh.position.z - br),
+        new THREE.Vector3(nx + br, CONFIG.WALL_HEIGHT, ballMesh.position.z + br)
+      );
+      if (ballBoxX.intersectsBox(wall)) {
+        const hitSpeed = Math.abs(vx);
+        nx = ballMesh.position.x;
+        vx = 0;
+        if (hitSpeed > 3) triggerWallHit(hitSpeed);
+      }
+      // Resolve on Z axis
+      const ballBoxZ = new THREE.Box3(
+        new THREE.Vector3(ballMesh.position.x - br, 0, nz - br),
+        new THREE.Vector3(ballMesh.position.x + br, CONFIG.WALL_HEIGHT, nz + br)
+      );
+      if (ballBoxZ.intersectsBox(wall)) {
+        const hitSpeed = Math.abs(vz);
+        nz = ballMesh.position.z;
+        vz = 0;
+        if (hitSpeed > 3) triggerWallHit(hitSpeed);
+      }
+    }
+  }
+
+  ballMesh.position.set(nx, CONFIG.BALL_RADIUS, nz);
+  ballOutlineMesh.position.copy(ballMesh.position);
+
+  // Ball roll visual
+  ballMesh.rotation.x += vz * dt * 1.5;
+  ballMesh.rotation.z -= vx * dt * 1.5;
+
+  // Orb collection
+  for (const orb of orbMeshes) {
+    if (orb.userData.collected) continue;
+    const dx = ballMesh.position.x - orb.userData.worldX;
+    const dz = ballMesh.position.z - orb.userData.worldZ;
+    if (Math.sqrt(dx * dx + dz * dz) < CONFIG.ORB_COLLECT_DIST) {
+      orb.userData.collected = true;
+      orb.visible = false;
+      if (orb.userData.outline) orb.userData.outline.visible = false;
+      orbsCollected++;
+      totalScore += 50;
+      updateHUD();
+      if (window._musicOrbCollect) window._musicOrbCollect();
+    }
+  }
+
+  // Exit detection
+  if (!transitioning) {
+    const ex = ballMesh.position.x - exitWorldPos.x;
+    const ez = ballMesh.position.z - exitWorldPos.z;
+    if (Math.sqrt(ex * ex + ez * ez) < CONFIG.EXIT_RADIUS + CONFIG.BALL_RADIUS) {
+      transitioning = true;
+      scoreLevelComplete();
+      if (window._musicLevelComplete) window._musicLevelComplete();
+      showBanner('LEVEL ' + (currentLevel + 1), 'SCORE ' + totalScore);
+      setTimeout(() => {
+        currentLevel++;
+        initLevel(currentLevel);
+      }, 1500);
+    }
+  }
+
+  // Camera follow with velocity-based lead (dolly + pan) + shake
+  const targetLeadX = vx * CONFIG.CAM_LEAD_X;
+  const targetLeadZ = vz * CONFIG.CAM_LEAD_Z;
+  camLeadX += (targetLeadX - camLeadX) * CONFIG.CAM_LERP;
+  camLeadZ += (targetLeadZ - camLeadZ) * CONFIG.CAM_LERP;
+
+  // Decay screen shake
+  if (shakeDecay > 0) {
+    shakeX = (Math.random() - 0.5) * shakeDecay;
+    shakeZ = (Math.random() - 0.5) * shakeDecay;
+    shakeDecay *= 0.85;
+    if (shakeDecay < 0.01) shakeDecay = 0;
+  } else {
+    shakeX = 0; shakeZ = 0;
+  }
+
+  camera.position.set(
+    ballMesh.position.x + camLeadX + shakeX,
+    CONFIG.CAM_HEIGHT,
+    ballMesh.position.z + CONFIG.CAM_HEIGHT * 0.55 + camLeadZ + shakeZ
+  );
+  camera.lookAt(
+    ballMesh.position.x + camLeadX * 0.5,
+    0,
+    ballMesh.position.z + camLeadZ * 0.5
+  );
+}
+
+// ─── 7b. WALL HIT FEEDBACK ──────────────────────────────────────────────────
+function triggerWallHit(hitSpeed) {
+  const intensity = Math.min(hitSpeed / CONFIG.MAX_SPEED, 1);
+  // Screen shake
+  shakeDecay = intensity * 1.2;
+  // Haptic vibration (mobile)
+  if (navigator.vibrate) {
+    navigator.vibrate(Math.floor(intensity * 40 + 10));
+  }
+  // Wall hit sound
+  if (audioCtx && musicPlaying) {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = 80 + intensity * 60;
+    gain.gain.setValueAtTime(intensity * 0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  }
+}
+
+// ─── 8. FETCH PALETTE (ball color from thecolorapi.com) ─────────────────────
+function fetchPalette(level) {
+  // Base palette from local array
+  const palette = { ...PALETTES[(level - 1) % PALETTES.length] };
+  return palette;
+}
+
+// Async ball color fetch — applies after level builds
+async function fetchBallColor() {
+  try {
+    const resp = await fetch('https://www.thecolorapi.com/random?format=json');
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.hex.value; // e.g. "#5FA26C"
+  } catch (e) {
+    return null;
+  }
+}
+
+function applyBallColor(hexColor) {
+  if (!ballMesh || !hexColor) return;
+  ballMesh.material.color.set(hexColor);
+}
+
+// ─── 9. INIT LEVEL ───────────────────────────────────────────────────────────
+function initLevel(levelNumber) {
+  gamePaused = true;
+  transitioning = false;
+  vx = 0; vz = 0; ax = 0; az = 0;
+  camLeadX = 0; camLeadZ = 0;
+  shakeDecay = 0;
+  orbsCollected = 0;
+  levelElapsed = 0;
+
+  // Difficulty curve: maze grows, cells shrink slightly at higher levels
+  const size = Math.min(4 + levelNumber, 13);
+  const mazeData = generateMaze(size, size);
+  const palette = fetchPalette(levelNumber);
+
+  // Remove old ball meshes
+  if (ballMesh) { scene.remove(ballMesh); ballMesh = null; }
+  if (ballOutlineMesh) { scene.remove(ballOutlineMesh); ballOutlineMesh = null; }
+
+  buildLevel(mazeData, palette);
+
+  totalOrbs = orbMeshes.length;
+  updateHUD();
+  if (window._musicShiftLevel) window._musicShiftLevel(levelNumber);
+
+  // Fetch ball color from API (async, applies when ready)
+  fetchBallColor().then(color => {
+    if (color) applyBallColor(color);
+  });
+
+  showBanner('LEVEL ' + levelNumber);
+  setTimeout(() => {
+    hideBanner();
+    gamePaused = false;
+    levelStartTime = performance.now();
+  }, 1200);
+}
+
+// ─── 10. HUD FUNCTIONS ───────────────────────────────────────────────────────
+function updateHUD() {
+  document.getElementById('hud-level').textContent = 'LVL ' + currentLevel;
+  document.getElementById('hud-orbs').textContent = 'ORBS ' + orbsCollected + '/' + totalOrbs;
+  document.getElementById('hud-score').textContent = 'SCORE ' + totalScore;
+  if (!gamePaused && levelStartTime > 0) {
+    levelElapsed = Math.floor((performance.now() - levelStartTime) / 1000);
+  }
+  document.getElementById('hud-time').textContent = 'TIME ' + levelElapsed + 's';
+}
+
+function scoreLevelComplete() {
+  const timeBonus = Math.max(0, 120 - levelElapsed) * 5;
+  const orbBonus = totalOrbs > 0 ? Math.round((orbsCollected / totalOrbs) * 500) : 0;
+  const levelBonus = currentLevel * 100;
+  totalScore += timeBonus + orbBonus + levelBonus;
+}
+
+const blurOverlay = document.getElementById('blur-overlay');
+
+function showBanner(text, sub) {
+  const b = document.getElementById('banner');
+  b.innerHTML = text + (sub ? '<div class="banner-sub">' + sub + '</div>' : '');
+  b.style.display = 'block';
+  blurOverlay.classList.add('active');
+}
+
+function hideBanner() {
+  document.getElementById('banner').style.display = 'none';
+  blurOverlay.classList.remove('active');
+}
+
+// ─── 11. INPUT LISTENERS ─────────────────────────────────────────────────────
+
+// --- Keyboard with exponential acceleration ---
+const keys = {};
+const keyHoldTime = {};
+const KEY_ACCEL_MIN = 0.25;
+const KEY_ACCEL_MAX = 1.0;
+const KEY_RAMP_TIME = 0.6;
+const KEY_EXPONENT  = 2.2;
+
+window.addEventListener('keydown', e => {
+  if (!keys[e.code]) keyHoldTime[e.code] = 0;
+  keys[e.code] = true;
+});
+window.addEventListener('keyup', e => {
+  keys[e.code] = false;
+  keyHoldTime[e.code] = 0;
+});
+
+function keyStrength(code, dt) {
+  if (!keys[code]) return 0;
+  keyHoldTime[code] = (keyHoldTime[code] || 0) + dt;
+  const t = Math.min(keyHoldTime[code] / KEY_RAMP_TIME, 1);
+  return KEY_ACCEL_MIN + (KEY_ACCEL_MAX - KEY_ACCEL_MIN) * Math.pow(t, KEY_EXPONENT);
+}
+
+function applyKeyboardInput(dt) {
+  ax = 0; az = 0;
+  const lStr = keyStrength('ArrowLeft', dt) || keyStrength('KeyA', dt);
+  const rStr = keyStrength('ArrowRight', dt) || keyStrength('KeyD', dt);
+  const uStr = keyStrength('ArrowUp', dt) || keyStrength('KeyW', dt);
+  const dStr = keyStrength('ArrowDown', dt) || keyStrength('KeyS', dt);
+  if (lStr) ax -= lStr;
+  if (rStr) ax += rStr;
+  if (uStr) az -= uStr;
+  if (dStr) az += dStr;
+}
+
+// --- Virtual joystick (primary mobile input) ---
+const joystickZone = document.getElementById('joystick-zone');
+const joystickKnob = document.getElementById('joystick-knob');
+let joystickActive = false;
+let joystickCenterX = 0, joystickCenterY = 0;
+const JOYSTICK_MAX_R = 52;
+
+joystickZone.addEventListener('touchstart', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  const rect = joystickZone.getBoundingClientRect();
+  joystickCenterX = rect.left + rect.width / 2;
+  joystickCenterY = rect.top + rect.height / 2;
+  joystickActive = true;
+  handleJoystickMove(e.touches[0]);
+}, { passive: false });
+
+joystickZone.addEventListener('touchmove', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (joystickActive) handleJoystickMove(e.touches[0]);
+}, { passive: false });
+
+joystickZone.addEventListener('touchend', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  joystickActive = false;
+  touchDX = 0; touchDY = 0;
+  touchActive = false;
+  joystickKnob.style.transform = 'translate(-50%, -50%)';
+}, { passive: false });
+
+function handleJoystickMove(touch) {
+  let dx = touch.clientX - joystickCenterX;
+  let dy = touch.clientY - joystickCenterY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist > JOYSTICK_MAX_R) {
+    dx = (dx / dist) * JOYSTICK_MAX_R;
+    dy = (dy / dist) * JOYSTICK_MAX_R;
+  }
+  joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  touchDX = dx / JOYSTICK_MAX_R;
+  touchDY = dy / JOYSTICK_MAX_R;
+  touchActive = true;
+}
+
+// --- Gyroscope ---
+function isSecureCtx() {
+  return window.isSecureContext === true;
+}
+
+function onDeviceOrientation(e) {
+  if (!gyroActive) return;
+  if (e.gamma === null || e.beta === null) return;
+  gyroHasData = true;
+  joystickZone.style.display = 'none';
+  ax = Math.max(-1, Math.min(1, e.gamma / 30));
+  az = Math.max(-1, Math.min(1, (e.beta - 20) / 30));
+}
+window.addEventListener('deviceorientation', onDeviceOrientation);
+
+const gyroBtn = document.getElementById('gyro-btn');
+const httpsWarn = document.getElementById('https-warn');
+
+function requestGyroPermission() {
+  if (!isSecureCtx()) {
+    httpsWarn.style.display = 'block';
+    gyroBtn.style.display = 'none';
+    setTimeout(() => { httpsWarn.style.display = 'none'; }, 4000);
+    return;
+  }
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(state => {
+        if (state === 'granted') {
+          gyroActive = true;
+          gyroBtn.style.display = 'none';
+        }
+      })
+      .catch(() => {});
+  } else {
+    gyroActive = true;
+    gyroBtn.style.display = 'none';
+  }
+}
+
+gyroBtn.addEventListener('click', requestGyroPermission);
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isTouchDevice() {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
+
+// ─── 12. ANIMATE LOOP ────────────────────────────────────────────────────────
+let lastTime = 0;
+
+function animate(time) {
+  requestAnimationFrame(animate);
+  const dt = Math.min((time - lastTime) / 1000, 0.05);
+  lastTime = time;
+
+  // Portal ring spin
+  if (portalRing) {
+    portalRing.rotation.y += dt * 2.5;
+    portalRing.rotation.x = Math.sin(time * 0.001) * 0.3;
+  }
+
+  // Orb bob
+  for (const orb of orbMeshes) {
+    if (!orb.userData.collected) {
+      orb.position.y = CONFIG.BALL_RADIUS + 0.3 + Math.sin(time * 0.002 + orb.userData.worldX) * 0.15;
+      if (orb.userData.outline) orb.userData.outline.position.y = orb.position.y;
+    }
+  }
+
+  // Input priority: gyro > joystick/touch > keyboard
+  if (!gyroHasData) {
+    if (touchActive) {
+      ax = touchDX;
+      az = touchDY;
+    } else {
+      applyKeyboardInput(dt);
+    }
+  }
+
+  // Update timer HUD
+  if (!gamePaused && levelStartTime > 0) {
+    levelElapsed = Math.floor((performance.now() - levelStartTime) / 1000);
+    document.getElementById('hud-time').textContent = 'TIME ' + levelElapsed + 's';
+  }
+
+  updateBall(dt);
+  renderer.render(scene, camera);
+}
+
+// Banner tap to restart current level
+document.getElementById('banner').addEventListener('click', () => {
+  if (gamePaused && !transitioning) {
+    initLevel(currentLevel);
+  }
+});
+
+// ─── 13. START SCREEN ────────────────────────────────────────────────────────
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('start-screen').style.display = 'none';
+  initAudio();
+
+  const hasPermissionAPI = typeof DeviceOrientationEvent !== 'undefined' &&
+    typeof DeviceOrientationEvent.requestPermission === 'function';
+  const touchDevice = isTouchDevice();
+
+  // Show virtual joystick on touch devices
+  if (touchDevice) {
+    joystickZone.style.display = 'block';
+  }
+
+  if (!isSecureCtx() && touchDevice) {
+    // Can't use gyro on insecure context — joystick is primary
+    httpsWarn.style.display = 'block';
+    setTimeout(() => { httpsWarn.style.display = 'none'; }, 4000);
+  } else if (isIOS() || hasPermissionAPI) {
+    gyroBtn.style.display = 'block';
+  } else if (typeof DeviceOrientationEvent !== 'undefined' && isSecureCtx()) {
+    gyroActive = true;
+    gyroBtn.textContent = 'TILT ACTIVE';
+    gyroBtn.style.display = 'block';
+    setTimeout(() => { gyroBtn.style.display = 'none'; }, 2000);
+  }
+
+  initLevel(1);
+  requestAnimationFrame(t => { lastTime = t; animate(t); });
+});
+
+</script>
+</body>
+</html>
