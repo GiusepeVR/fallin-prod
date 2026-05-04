@@ -54,12 +54,97 @@
     font-size: 22px; color: #aaa; margin: 10px 0 40px;
     letter-spacing: 2px;
   }
-  #start-btn {
+  #start-btn,
+  #new-game-btn,
+  #continue-btn {
     background: #ff0066; color: #fff; border: 4px solid #fff;
     padding: 16px 48px; font-family: 'Bebas Neue', cursive;
     font-size: 32px; letter-spacing: 4px; cursor: pointer;
+    margin: 6px 0;
   }
-  #start-btn:active { background: #cc0044; }
+  #continue-btn { background: #00cc44; }
+  #start-btn:active,
+  #new-game-btn:active { background: #cc0044; }
+  #continue-btn:active { background: #009933; }
+  #control-icon { font-size: 56px; margin-bottom: 8px; }
+  #control-hint, #orb-hint {
+    font-size: 18px; color: #aaa; letter-spacing: 1px;
+    margin: 4px 0; text-align: center; max-width: 80vw;
+  }
+  #orb-hint { margin-bottom: 24px; }
+  #leaderboard-btn,
+  #auth-link {
+    background: transparent; color: #aaa; border: none;
+    font-family: 'Bebas Neue', cursive; font-size: 16px;
+    letter-spacing: 2px; cursor: pointer; margin-top: 16px;
+    text-decoration: underline;
+  }
+  #leaderboard-btn:hover, #auth-link:hover { color: #fff; }
+  #auth-status {
+    color: #aaa; font-size: 16px; letter-spacing: 2px;
+    margin-top: 16px;
+  }
+  #auth-status .auth-user { color: #fff; }
+  .modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    z-index: 60; display: none; align-items: center;
+    justify-content: center;
+  }
+  .modal.active { display: flex; }
+  .modal-card {
+    background: #000; border: 4px solid #fff; padding: 24px;
+    min-width: 280px; max-width: 92vw; max-height: 90vh;
+    overflow-y: auto; color: #fff;
+  }
+  .modal-card h2 {
+    font-size: 28px; letter-spacing: 3px; margin-bottom: 16px;
+    text-align: center;
+  }
+  .modal-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .modal-tabs button {
+    flex: 1; background: transparent; color: #aaa;
+    border: 2px solid #444; padding: 8px;
+    font-family: 'Bebas Neue', cursive; font-size: 18px;
+    letter-spacing: 2px; cursor: pointer;
+  }
+  .modal-tabs button.active { color: #fff; border-color: #fff; }
+  .modal-card input {
+    display: block; width: 100%; padding: 10px; margin: 6px 0;
+    background: #111; color: #fff; border: 2px solid #444;
+    font-family: 'Bebas Neue', cursive; font-size: 18px;
+    letter-spacing: 1px;
+  }
+  .modal-card input:focus { border-color: #fff; outline: none; }
+  .modal-card .modal-error {
+    color: #ff0066; font-size: 14px; min-height: 20px;
+    margin: 6px 0; letter-spacing: 1px; text-align: center;
+  }
+  .modal-card .modal-actions {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .modal-card .modal-actions button {
+    flex: 1; padding: 12px; background: #ff0066; color: #fff;
+    border: 3px solid #fff; font-family: 'Bebas Neue', cursive;
+    font-size: 20px; letter-spacing: 2px; cursor: pointer;
+  }
+  .modal-card .modal-actions .secondary {
+    background: transparent; color: #aaa; border-color: #444;
+  }
+  .leaderboard-row {
+    display: grid; grid-template-columns: 40px 1fr 80px 60px;
+    gap: 8px; padding: 6px 0; border-bottom: 1px solid #222;
+    font-size: 16px; letter-spacing: 1px;
+  }
+  .leaderboard-row .lb-rank { color: #aaa; }
+  .leaderboard-row .lb-points { text-align: right; color: #FFE500; }
+  .leaderboard-row .lb-level { text-align: right; color: #aaa; }
+  .leaderboard-empty { color: #aaa; text-align: center; padding: 24px; }
+  /* Patrol-collision flash */
+  #hud.hud-flash { animation: hudFlash 300ms ease-out; }
+  @keyframes hudFlash {
+    0%   { background: rgba(255,0,102,0.45); }
+    100% { background: transparent; }
+  }
 
   /* Virtual joystick */
   #joystick-zone {
@@ -107,31 +192,63 @@
 
 <div id="hud">
   <div id="hud-top">
-    <div class="hud-box" id="hud-level">LVL 1</div>
-    <div class="hud-box" id="hud-orbs">ORBS 0/0</div>
+    <div class="hud-box" id="hud-level"></div>
+    <div class="hud-box" id="hud-orbs"></div>
   </div>
   <div style="display:flex;justify-content:center;padding:0 20px;">
-    <div class="hud-box" id="hud-time" style="font-size:18px;padding:2px 10px;">TIME 0s</div>
-    <div class="hud-box" id="hud-score" style="font-size:18px;padding:2px 10px;margin-left:8px;">SCORE 0</div>
+    <div class="hud-box" id="hud-time" style="font-size:18px;padding:2px 10px;"></div>
+    <div class="hud-box" id="hud-score" style="font-size:18px;padding:2px 10px;margin-left:8px;"></div>
   </div>
 </div>
 
 <div id="blur-overlay"></div>
 <div id="banner"></div>
 
-<button id="gyro-btn">ENABLE TILT</button>
+<button id="gyro-btn"></button>
 
 <div id="joystick-zone">
   <div id="joystick-base"></div>
   <div id="joystick-knob"></div>
 </div>
 
-<div id="https-warn">TILT REQUIRES HTTPS — USING JOYSTICK INSTEAD</div>
+<div id="https-warn"></div>
 
 <div id="start-screen">
   <h1>FALLIN</h1>
-  <p>TILT TO ROLL — REACH THE EXIT</p>
-  <button id="start-btn" id="start-btn">PLAY</button>
+  <div id="control-icon"></div>
+  <div id="control-hint"></div>
+  <div id="orb-hint"></div>
+  <button id="continue-btn" style="display:none"></button>
+  <button id="new-game-btn"></button>
+  <button id="leaderboard-btn"></button>
+  <div id="auth-status"></div>
+</div>
+
+<div id="auth-modal" class="modal">
+  <div class="modal-card">
+    <h2 id="auth-title"></h2>
+    <div class="modal-tabs">
+      <button id="auth-tab-login" class="active"></button>
+      <button id="auth-tab-register"></button>
+    </div>
+    <input id="auth-username" type="text" autocomplete="username">
+    <input id="auth-password" type="password" autocomplete="current-password">
+    <div id="auth-error" class="modal-error"></div>
+    <div class="modal-actions">
+      <button class="secondary" id="auth-cancel"></button>
+      <button id="auth-submit"></button>
+    </div>
+  </div>
+</div>
+
+<div id="leaderboard-modal" class="modal">
+  <div class="modal-card">
+    <h2 id="leaderboard-title"></h2>
+    <div id="leaderboard-list"></div>
+    <div class="modal-actions">
+      <button class="secondary" id="leaderboard-close"></button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -157,7 +274,194 @@ const CONFIG = {
   CAM_LEAD_X:     0.18,   // how much camera pans ahead horizontally
   CAM_LEAD_Z:     0.14,   // how much camera dollies ahead vertically
   CAM_LERP:       0.06,   // smoothing factor (lower = more cinematic lag)
+  // Patrol enemies (floor 4+)
+  ENEMY_PATROL_SPEED: 4.5,    // world units per second
+  ENEMY_SIZE:         0.7,
+  ENEMY_POINT_LOSS:   50,
 };
+
+// ─── 1a. I18N ────────────────────────────────────────────────────────────────
+const STRINGS = {
+  en: {
+    tagline:               'Roll. Collect. Escape.',
+    controls_gyro:         'Tilt your phone to roll the ball',
+    controls_touch:        'Drag to roll the ball',
+    controls_keys:         'WASD or arrow keys to roll',
+    orb_hint:              'Collect all orbs to open the exit',
+    exit_hint:             'Find the exit portal!',
+    enemy_patrol:          'Watch out for patrolling enemies!',
+    enemy_seeker:          'Something is hunting you...',
+    level_complete:        'LEVEL COMPLETE',
+    new_game_btn:          'NEW GAME',
+    loading:               'LOADING...',
+    floor_label:           'FLOOR',
+    score_label:           'SCORE',
+    best_label:            'BEST',
+    level_label:           'LEVEL',
+    orbs_label:            'ORBS',
+    time_label:            'TIME',
+    enable_tilt:           'ENABLE TILT',
+    tilt_active:           'TILT ACTIVE',
+    https_warn:            'TILT REQUIRES HTTPS — USING JOYSTICK INSTEAD',
+    resume_btn:            (n) => `CONTINUE (FLOOR ${n})`,
+    leaderboard_btn:       'LEADERBOARD',
+    leaderboard_title:     'LEADERBOARD',
+    leaderboard_unavailable:'Leaderboard unavailable',
+    leaderboard_empty:     'No scores yet — be the first!',
+    signin_prompt:         'Sign in for leaderboard',
+    signed_in_as:          (u) => `👤 ${u}`,
+    sign_out:              'SIGN OUT',
+    auth_title:            'ACCOUNT',
+    login_tab:             'LOGIN',
+    register_tab:          'REGISTER',
+    username_label:        'Username',
+    password_label:        'Password',
+    submit_btn:            'GO',
+    cancel_btn:            'CANCEL',
+    auth_invalid_username: 'Username must be 3-30 letters/numbers',
+    auth_invalid_password: 'Password must be at least 6 characters',
+    auth_username_taken:   'That username is taken',
+    auth_invalid_credentials:'Wrong username or password',
+    auth_server_error:     'Could not reach server',
+    close_btn:             'CLOSE'
+  },
+  es: {
+    tagline:               'Rueda. Recoge. Escapa.',
+    controls_gyro:         'Inclina tu celular para mover la bola',
+    controls_touch:        'Arrastra para mover la bola',
+    controls_keys:         'WASD o flechas del teclado',
+    orb_hint:              'Recoge todos los orbes para abrir la salida',
+    exit_hint:             '¡Encuentra el portal de salida!',
+    enemy_patrol:          '¡Cuidado con los enemigos que patrullan!',
+    enemy_seeker:          'Algo te está cazando...',
+    level_complete:        'NIVEL COMPLETO',
+    new_game_btn:          'NUEVO JUEGO',
+    loading:               'CARGANDO...',
+    floor_label:           'NIVEL',
+    score_label:           'PUNTOS',
+    best_label:            'MEJOR',
+    level_label:           'NIVEL',
+    orbs_label:            'ORBES',
+    time_label:            'TIEMPO',
+    enable_tilt:           'ACTIVAR INCLINACIÓN',
+    tilt_active:           'INCLINACIÓN ACTIVA',
+    https_warn:            'INCLINACIÓN REQUIERE HTTPS — USANDO JOYSTICK',
+    resume_btn:            (n) => `CONTINUAR (NIVEL ${n})`,
+    leaderboard_btn:       'CLASIFICACIÓN',
+    leaderboard_title:     'CLASIFICACIÓN',
+    leaderboard_unavailable:'Clasificación no disponible',
+    leaderboard_empty:     'Aún no hay puntajes — ¡sé el primero!',
+    signin_prompt:         'Inicia sesión para la clasificación',
+    signed_in_as:          (u) => `👤 ${u}`,
+    sign_out:              'CERRAR SESIÓN',
+    auth_title:            'CUENTA',
+    login_tab:             'ENTRAR',
+    register_tab:          'REGISTRAR',
+    username_label:        'Usuario',
+    password_label:        'Contraseña',
+    submit_btn:            'IR',
+    cancel_btn:            'CANCELAR',
+    auth_invalid_username: 'El usuario debe tener 3-30 letras/números',
+    auth_invalid_password: 'La contraseña debe tener al menos 6 caracteres',
+    auth_username_taken:   'Ese usuario ya existe',
+    auth_invalid_credentials:'Usuario o contraseña incorrectos',
+    auth_server_error:     'No se pudo conectar al servidor',
+    close_btn:             'CERRAR'
+  }
+};
+
+const lang = (navigator.language || 'en').slice(0, 2) === 'es' ? 'es' : 'en';
+function t(key, ...args) {
+  const val = STRINGS[lang][key] ?? STRINGS.en[key];
+  if (typeof val === 'function') return val(...args);
+  return val ?? key;
+}
+
+function detectDevice() {
+  const hasTouch = (navigator.maxTouchPoints || 0) > 0;
+  const hasGyro  = typeof DeviceOrientationEvent !== 'undefined';
+  if (hasTouch && hasGyro) return 'mobile-gyro';
+  if (hasTouch)            return 'mobile-touch';
+  return 'desktop';
+}
+
+// ─── 1a2. PERSISTENCE ────────────────────────────────────────────────────────
+const SAVE_KEY  = 'fallin_save';
+const HINTS_KEY = 'fallin_hints';
+
+function saveProgress(level, score) {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ level, score })); }
+  catch (e) { console.warn('FallIn: save failed', e); }
+}
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY); if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (typeof s.level !== 'number' || s.level < 1) return null;
+    if (typeof s.score !== 'number' || s.score < 0) s.score = 0;
+    return s;
+  } catch { return null; }
+}
+function clearProgress() { localStorage.removeItem(SAVE_KEY); }
+
+function loadHints() {
+  try {
+    const raw = localStorage.getItem(HINTS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function saveHints(patch) {
+  try {
+    const next = { ...loadHints(), ...patch };
+    localStorage.setItem(HINTS_KEY, JSON.stringify(next));
+  } catch (e) { console.warn('FallIn: hints save failed', e); }
+}
+
+// ─── 1b. COLOR UTILS ─────────────────────────────────────────────────────────
+// Clamp HSL saturation of a hex color to maxS (0-1). Hue and lightness untouched.
+function desaturate(hex, maxS = 0.62) {
+  if (typeof hex !== 'string' || hex[0] !== '#' || hex.length !== 7) return hex;
+  const r = parseInt(hex.slice(1,3),16)/255;
+  const g = parseInt(hex.slice(3,5),16)/255;
+  const b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max) {
+      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
+      case g: h = ((b-r)/d + 2)/6; break;
+      case b: h = ((r-g)/d + 4)/6; break;
+    }
+  }
+  s = Math.min(s, maxS);
+  const hue2rgb = (p,q,t) => {
+    if(t<0) t+=1; if(t>1) t-=1;
+    if(t<1/6) return p+(q-p)*6*t;
+    if(t<1/2) return q;
+    if(t<2/3) return p+(q-p)*(2/3-t)*6;
+    return p;
+  };
+  const q = l<0.5 ? l*(1+s) : l+s-l*s;
+  const p = 2*l-q;
+  const to255 = c => Math.round(hue2rgb(p,q,c)*255);
+  return '#'+[to255(h+1/3),to255(h),to255(h-1/3)]
+    .map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+// Apply desaturation to a full palette. Exit is forced to #FFE500 for visibility.
+function normalizePalette(palette) {
+  return {
+    bg:    desaturate(palette.bg),
+    floor: desaturate(palette.floor),
+    wall:  desaturate(palette.wall),
+    ball:  desaturate(palette.ball),
+    orb:   desaturate(palette.orb),
+    exit:  '#FFE500'
+  };
+}
 
 // ─── 2. PALETTES ─────────────────────────────────────────────────────────────
 const PALETTES = [
@@ -684,6 +988,9 @@ let levelElapsed = 0;
 let shakeX = 0, shakeZ = 0;
 let shakeDecay = 0;
 
+// Patrol enemies
+let patrols = [];
+
 // Touch drag state
 let touchStartX = 0, touchStartY = 0;
 let touchDX = 0, touchDY = 0;
@@ -779,8 +1086,12 @@ function updateBall(dt) {
     if (Math.sqrt(ex * ex + ez * ez) < CONFIG.EXIT_RADIUS + CONFIG.BALL_RADIUS) {
       transitioning = true;
       scoreLevelComplete();
+      saveProgress(currentLevel + 1, totalScore);
       if (window._musicLevelComplete) window._musicLevelComplete();
-      showBanner('LEVEL ' + (currentLevel + 1), 'SCORE ' + totalScore);
+      if (typeof submitScore === 'function') {
+        submitScore(totalScore, currentLevel, Math.round((performance.now() - levelStartTime)));
+      }
+      showBanner(t('level_label') + ' ' + (currentLevel + 1), t('score_label') + ' ' + totalScore);
       setTimeout(() => {
         currentLevel++;
         initLevel(currentLevel);
@@ -816,6 +1127,205 @@ function updateBall(dt) {
   );
 }
 
+// ─── 7a. PATROL ENEMIES ─────────────────────────────────────────────────────
+// Find horizontal/vertical corridor runs of >=3 cells. Returns world-space ranges.
+function findCorridors(mazeData) {
+  const { grid, cols, rows } = mazeData;
+  const CS = CONFIG.CELL_SIZE;
+  const offX = -(cols * CS) / 2;
+  const offZ = -(rows * CS) / 2;
+  const cellAt = (x, z) => grid[z * cols + x];
+  const isCorridor = (c, axis) => {
+    if (!c) return false;
+    if (axis === 'x') return !c.walls.E && !c.walls.W && c.walls.N && c.walls.S;
+    return !c.walls.N && !c.walls.S && c.walls.E && c.walls.W;
+  };
+  const out = [];
+  // Horizontal runs (axis x)
+  for (let z = 0; z < rows; z++) {
+    let run = 0, runStart = 0;
+    for (let x = 0; x < cols; x++) {
+      if (isCorridor(cellAt(x, z), 'x')) {
+        if (run === 0) runStart = x;
+        run++;
+      } else {
+        if (run >= 3) {
+          out.push({
+            axis: 'x',
+            min: offX + (runStart + 0.5) * CS,
+            max: offX + (runStart + run - 0.5) * CS,
+            fixed: offZ + (z + 0.5) * CS
+          });
+        }
+        run = 0;
+      }
+    }
+    if (run >= 3) {
+      out.push({
+        axis: 'x',
+        min: offX + (runStart + 0.5) * CS,
+        max: offX + (runStart + run - 0.5) * CS,
+        fixed: offZ + (z + 0.5) * CS
+      });
+    }
+  }
+  // Vertical runs (axis z)
+  for (let x = 0; x < cols; x++) {
+    let run = 0, runStart = 0;
+    for (let z = 0; z < rows; z++) {
+      if (isCorridor(cellAt(x, z), 'z')) {
+        if (run === 0) runStart = z;
+        run++;
+      } else {
+        if (run >= 3) {
+          out.push({
+            axis: 'z',
+            min: offZ + (runStart + 0.5) * CS,
+            max: offZ + (runStart + run - 0.5) * CS,
+            fixed: offX + (x + 0.5) * CS
+          });
+        }
+        run = 0;
+      }
+    }
+    if (run >= 3) {
+      out.push({
+        axis: 'z',
+        min: offZ + (runStart + 0.5) * CS,
+        max: offZ + (runStart + run - 0.5) * CS,
+        fixed: offX + (x + 0.5) * CS
+      });
+    }
+  }
+  return out;
+}
+
+function spawnPatrols(mazeData, levelNumber, palette) {
+  removePatrols();
+  if (levelNumber < 4) return;
+  const corridors = findCorridors(mazeData);
+  if (corridors.length === 0) return;
+  const count = Math.floor((levelNumber - 3) / 2) + 1;
+  const picks = corridors.slice().sort(() => Math.random() - 0.5).slice(0, count);
+
+  const size = CONFIG.ENEMY_SIZE;
+  const geo = new THREE.BoxGeometry(size, size, size);
+  for (const corridor of picks) {
+    const mat = new THREE.MeshToonMaterial({ color: new THREE.Color(palette.wall) });
+    const mesh = new THREE.Mesh(geo, mat);
+    const outlineMat = new THREE.MeshToonMaterial({ color: 0x000000, side: THREE.BackSide });
+    const outlineMesh = new THREE.Mesh(geo, outlineMat);
+    outlineMesh.scale.setScalar(1.05);
+    mesh.add(outlineMesh);
+
+    const mid = (corridor.min + corridor.max) / 2;
+    if (corridor.axis === 'x') {
+      mesh.position.set(mid, size / 2 + 0.05, corridor.fixed);
+    } else {
+      mesh.position.set(corridor.fixed, size / 2 + 0.05, mid);
+    }
+    levelGroup.add(mesh);
+
+    patrols.push({
+      mesh,
+      axis: corridor.axis,
+      min: corridor.min,
+      max: corridor.max,
+      fixed: corridor.fixed,
+      dir: Math.random() < 0.5 ? -1 : 1
+    });
+  }
+}
+
+function removePatrols() {
+  for (const p of patrols) {
+    if (p.mesh && p.mesh.parent) p.mesh.parent.remove(p.mesh);
+  }
+  patrols = [];
+}
+
+function updatePatrols(dt) {
+  if (patrols.length === 0 || gamePaused || transitioning) return;
+  const ballR = CONFIG.BALL_RADIUS;
+  const half  = CONFIG.ENEMY_SIZE / 2;
+  for (const p of patrols) {
+    p.mesh.rotation.y += dt * 2;
+    const speed = CONFIG.ENEMY_PATROL_SPEED * dt * p.dir;
+    if (p.axis === 'x') {
+      let nx = p.mesh.position.x + speed;
+      if (nx < p.min) { nx = p.min; p.dir = 1; }
+      else if (nx > p.max) { nx = p.max; p.dir = -1; }
+      p.mesh.position.x = nx;
+    } else {
+      let nz = p.mesh.position.z + speed;
+      if (nz < p.min) { nz = p.min; p.dir = 1; }
+      else if (nz > p.max) { nz = p.max; p.dir = -1; }
+      p.mesh.position.z = nz;
+    }
+
+    // Sphere vs AABB collision
+    if (!ballMesh) continue;
+    const ex = p.mesh.position.x, ez = p.mesh.position.z;
+    const bx = ballMesh.position.x, bz = ballMesh.position.z;
+    const dx = bx - Math.max(ex - half, Math.min(bx, ex + half));
+    const dz = bz - Math.max(ez - half, Math.min(bz, ez + half));
+    if (dx*dx + dz*dz < ballR * ballR) {
+      // Push out along the larger overlap axis
+      const overlapX = (half + ballR) - Math.abs(bx - ex);
+      const overlapZ = (half + ballR) - Math.abs(bz - ez);
+      if (overlapX < overlapZ) {
+        const sign = bx < ex ? -1 : 1;
+        ballMesh.position.x = ex + sign * (half + ballR + 0.001);
+        vx = sign * Math.max(Math.abs(vx), 8);
+      } else {
+        const sign = bz < ez ? -1 : 1;
+        ballMesh.position.z = ez + sign * (half + ballR + 0.001);
+        vz = sign * Math.max(Math.abs(vz), 8);
+      }
+      onPatrolHit();
+    }
+  }
+}
+
+let _lastPatrolHit = 0;
+function onPatrolHit() {
+  const now = performance.now();
+  if (now - _lastPatrolHit < 600) return; // debounce repeated hits
+  _lastPatrolHit = now;
+
+  totalScore = Math.max(0, totalScore - CONFIG.ENEMY_POINT_LOSS);
+  updateHUD();
+
+  const hud = document.getElementById('hud');
+  hud.classList.remove('hud-flash');
+  // Force reflow so the animation restarts
+  void hud.offsetWidth;
+  hud.classList.add('hud-flash');
+
+  if (navigator.vibrate) navigator.vibrate(80);
+  if (audioCtx && musicPlaying) {
+    const t0 = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(120, t0);
+    osc.frequency.exponentialRampToValueAtTime(60, t0 + 0.18);
+    gain.gain.setValueAtTime(0.18, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.2);
+  }
+
+  const hints = loadHints();
+  if (!hints.patrol) {
+    showBanner(t('enemy_patrol'));
+    setTimeout(() => { hideBanner(); }, 2500);
+    saveHints({ patrol: true });
+  }
+}
+
 // ─── 7b. WALL HIT FEEDBACK ──────────────────────────────────────────────────
 function triggerWallHit(hitSpeed) {
   const intensity = Math.min(hitSpeed / CONFIG.MAX_SPEED, 1);
@@ -843,9 +1353,9 @@ function triggerWallHit(hitSpeed) {
 
 // ─── 8. FETCH PALETTE (ball color from thecolorapi.com) ─────────────────────
 function fetchPalette(level) {
-  // Base palette from local array
+  // Base palette from local array, normalized for saturation + fixed exit color.
   const palette = { ...PALETTES[(level - 1) % PALETTES.length] };
-  return palette;
+  return normalizePalette(palette);
 }
 
 // Async ball color fetch — applies after level builds
@@ -864,6 +1374,175 @@ function applyBallColor(hexColor) {
   if (!ballMesh || !hexColor) return;
   ballMesh.material.color.set(hexColor);
 }
+
+// ─── 8b. BACKEND CLIENT ──────────────────────────────────────────────────────
+const API_URL = window.FALLIN_API_URL || 'http://localhost:3001';
+let authToken = localStorage.getItem('fallin_token') || null;
+let authUser  = (() => { try { return JSON.parse(localStorage.getItem('fallin_user') || 'null'); } catch { return null; } })();
+
+function setAuth(token, user) {
+  authToken = token;
+  authUser  = user;
+  if (token && user) {
+    localStorage.setItem('fallin_token', token);
+    localStorage.setItem('fallin_user', JSON.stringify(user));
+  } else {
+    localStorage.removeItem('fallin_token');
+    localStorage.removeItem('fallin_user');
+  }
+  renderAuthStatus();
+}
+
+async function submitScore(points, level, timeMs) {
+  if (!authToken) return;
+  try {
+    await fetch(`${API_URL}/scores`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ points, level, timeMs })
+    });
+  } catch (e) {
+    console.warn('FallIn: score submit failed silently', e);
+  }
+}
+
+function renderAuthStatus() {
+  const el = document.getElementById('auth-status');
+  el.innerHTML = '';
+  if (authUser) {
+    const userSpan = document.createElement('span');
+    userSpan.className = 'auth-user';
+    userSpan.textContent = t('signed_in_as', authUser.username);
+    const sep = document.createTextNode(' · ');
+    const out = document.createElement('button');
+    out.id = 'auth-link';
+    out.textContent = t('sign_out');
+    out.onclick = () => setAuth(null, null);
+    el.appendChild(userSpan);
+    el.appendChild(sep);
+    el.appendChild(out);
+  } else {
+    const link = document.createElement('button');
+    link.id = 'auth-link';
+    link.textContent = t('signin_prompt');
+    link.onclick = openAuthModal;
+    el.appendChild(link);
+  }
+}
+
+// ─── 8c. AUTH MODAL ──────────────────────────────────────────────────────────
+let authMode = 'login'; // 'login' | 'register'
+
+function openAuthModal() {
+  authMode = 'login';
+  refreshAuthModal();
+  document.getElementById('auth-modal').classList.add('active');
+  document.getElementById('auth-username').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-error').textContent = '';
+  setTimeout(() => document.getElementById('auth-username').focus(), 50);
+}
+function closeAuthModal() {
+  document.getElementById('auth-modal').classList.remove('active');
+}
+function refreshAuthModal() {
+  document.getElementById('auth-title').textContent = t('auth_title');
+  document.getElementById('auth-tab-login').textContent    = t('login_tab');
+  document.getElementById('auth-tab-register').textContent = t('register_tab');
+  document.getElementById('auth-tab-login').classList.toggle('active', authMode === 'login');
+  document.getElementById('auth-tab-register').classList.toggle('active', authMode === 'register');
+  document.getElementById('auth-username').placeholder = t('username_label');
+  document.getElementById('auth-password').placeholder = t('password_label');
+  document.getElementById('auth-submit').textContent = t('submit_btn');
+  document.getElementById('auth-cancel').textContent = t('cancel_btn');
+}
+
+async function authSubmit() {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.textContent = '';
+  if (username.length < 3 || username.length > 30 || !/^[a-zA-Z0-9_-]+$/.test(username)) {
+    errEl.textContent = t('auth_invalid_username');
+    return;
+  }
+  if (password.length < 6) {
+    errEl.textContent = t('auth_invalid_password');
+    return;
+  }
+  try {
+    const resp = await fetch(`${API_URL}/auth/${authMode === 'login' ? 'login' : 'register'}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      const map = {
+        username_taken:      'auth_username_taken',
+        invalid_credentials: 'auth_invalid_credentials',
+        invalid_username:    'auth_invalid_username',
+        invalid_password:    'auth_invalid_password'
+      };
+      errEl.textContent = t(map[data.error] || 'auth_server_error');
+      return;
+    }
+    const data = await resp.json();
+    setAuth(data.token, data.user);
+    closeAuthModal();
+  } catch (e) {
+    console.warn('FallIn: auth request failed', e);
+    errEl.textContent = t('auth_server_error');
+  }
+}
+
+document.getElementById('auth-tab-login').addEventListener('click', () => { authMode = 'login'; refreshAuthModal(); });
+document.getElementById('auth-tab-register').addEventListener('click', () => { authMode = 'register'; refreshAuthModal(); });
+document.getElementById('auth-submit').addEventListener('click', authSubmit);
+document.getElementById('auth-cancel').addEventListener('click', closeAuthModal);
+document.getElementById('auth-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') authSubmit();
+});
+
+// ─── 8d. LEADERBOARD ─────────────────────────────────────────────────────────
+async function openLeaderboard() {
+  const modal = document.getElementById('leaderboard-modal');
+  const list  = document.getElementById('leaderboard-list');
+  document.getElementById('leaderboard-title').textContent = t('leaderboard_title');
+  document.getElementById('leaderboard-close').textContent = t('close_btn');
+  list.innerHTML = `<div class="leaderboard-empty">${t('loading')}</div>`;
+  modal.classList.add('active');
+  try {
+    const resp = await fetch(`${API_URL}/scores/global`);
+    if (!resp.ok) throw new Error('http_' + resp.status);
+    const rows = await resp.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      list.innerHTML = `<div class="leaderboard-empty">${t('leaderboard_empty')}</div>`;
+      return;
+    }
+    list.innerHTML = rows.map(r => `
+      <div class="leaderboard-row">
+        <span class="lb-rank">#${r.rank}</span>
+        <span class="lb-name">${escapeHtml(r.username)}</span>
+        <span class="lb-points">${r.points}</span>
+        <span class="lb-level">L${r.level}</span>
+      </div>`).join('');
+  } catch (e) {
+    console.warn('FallIn: leaderboard fetch failed', e);
+    list.innerHTML = `<div class="leaderboard-empty">${t('leaderboard_unavailable')}</div>`;
+  }
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+document.getElementById('leaderboard-close').addEventListener('click', () => {
+  document.getElementById('leaderboard-modal').classList.remove('active');
+});
 
 // ─── 9. INIT LEVEL ───────────────────────────────────────────────────────────
 function initLevel(levelNumber) {
@@ -885,17 +1564,18 @@ function initLevel(levelNumber) {
   if (ballOutlineMesh) { scene.remove(ballOutlineMesh); ballOutlineMesh = null; }
 
   buildLevel(mazeData, palette);
+  spawnPatrols(mazeData, levelNumber, palette);
 
   totalOrbs = orbMeshes.length;
   updateHUD();
   if (window._musicShiftLevel) window._musicShiftLevel(levelNumber);
 
-  // Fetch ball color from API (async, applies when ready)
+  // Fetch ball color from API (async, applies when ready). Desaturate to match palette tone.
   fetchBallColor().then(color => {
-    if (color) applyBallColor(color);
+    if (color) applyBallColor(desaturate(color));
   });
 
-  showBanner('LEVEL ' + levelNumber);
+  showBanner(t('level_label') + ' ' + levelNumber);
   setTimeout(() => {
     hideBanner();
     gamePaused = false;
@@ -905,13 +1585,13 @@ function initLevel(levelNumber) {
 
 // ─── 10. HUD FUNCTIONS ───────────────────────────────────────────────────────
 function updateHUD() {
-  document.getElementById('hud-level').textContent = 'LVL ' + currentLevel;
-  document.getElementById('hud-orbs').textContent = 'ORBS ' + orbsCollected + '/' + totalOrbs;
-  document.getElementById('hud-score').textContent = 'SCORE ' + totalScore;
+  document.getElementById('hud-level').textContent = t('floor_label') + ' ' + currentLevel;
+  document.getElementById('hud-orbs').textContent  = t('orbs_label') + ' ' + orbsCollected + '/' + totalOrbs;
+  document.getElementById('hud-score').textContent = t('score_label') + ' ' + totalScore;
   if (!gamePaused && levelStartTime > 0) {
     levelElapsed = Math.floor((performance.now() - levelStartTime) / 1000);
   }
-  document.getElementById('hud-time').textContent = 'TIME ' + levelElapsed + 's';
+  document.getElementById('hud-time').textContent  = t('time_label') + ' ' + levelElapsed + 's';
 }
 
 function scoreLevelComplete() {
@@ -1106,9 +1786,10 @@ function animate(time) {
   // Update timer HUD
   if (!gamePaused && levelStartTime > 0) {
     levelElapsed = Math.floor((performance.now() - levelStartTime) / 1000);
-    document.getElementById('hud-time').textContent = 'TIME ' + levelElapsed + 's';
+    document.getElementById('hud-time').textContent = t('time_label') + ' ' + levelElapsed + 's';
   }
 
+  updatePatrols(dt);
   updateBall(dt);
   renderer.render(scene, camera);
 }
@@ -1121,7 +1802,7 @@ document.getElementById('banner').addEventListener('click', () => {
 });
 
 // ─── 13. START SCREEN ────────────────────────────────────────────────────────
-document.getElementById('start-btn').addEventListener('click', () => {
+function startGame(save) {
   document.getElementById('start-screen').style.display = 'none';
   initAudio();
 
@@ -1129,27 +1810,78 @@ document.getElementById('start-btn').addEventListener('click', () => {
     typeof DeviceOrientationEvent.requestPermission === 'function';
   const touchDevice = isTouchDevice();
 
-  // Show virtual joystick on touch devices
-  if (touchDevice) {
-    joystickZone.style.display = 'block';
-  }
+  if (touchDevice) joystickZone.style.display = 'block';
 
   if (!isSecureCtx() && touchDevice) {
-    // Can't use gyro on insecure context — joystick is primary
     httpsWarn.style.display = 'block';
     setTimeout(() => { httpsWarn.style.display = 'none'; }, 4000);
   } else if (isIOS() || hasPermissionAPI) {
     gyroBtn.style.display = 'block';
   } else if (typeof DeviceOrientationEvent !== 'undefined' && isSecureCtx()) {
     gyroActive = true;
-    gyroBtn.textContent = 'TILT ACTIVE';
+    gyroBtn.textContent = t('tilt_active');
     gyroBtn.style.display = 'block';
     setTimeout(() => { gyroBtn.style.display = 'none'; }, 2000);
   }
 
-  initLevel(1);
-  requestAnimationFrame(t => { lastTime = t; animate(t); });
-});
+  if (save) {
+    currentLevel = save.level;
+    totalScore   = save.score;
+  } else {
+    currentLevel = 1;
+    totalScore   = 0;
+  }
+  initLevel(currentLevel);
+  requestAnimationFrame(ts => { lastTime = ts; animate(ts); });
+}
+
+function initStartScreen() {
+  // Static labels that never change after load
+  gyroBtn.textContent  = t('enable_tilt');
+  httpsWarn.textContent = t('https_warn');
+
+  // Device-appropriate onboarding
+  const device = detectDevice();
+  const controlKeys = {
+    'mobile-gyro':  'controls_gyro',
+    'mobile-touch': 'controls_touch',
+    'desktop':      'controls_keys'
+  };
+  const icons = {
+    'mobile-gyro':  '📱',
+    'mobile-touch': '👆',
+    'desktop':      '⌨️'
+  };
+  document.getElementById('control-icon').textContent = icons[device];
+  document.getElementById('control-hint').textContent = t(controlKeys[device]);
+  document.getElementById('orb-hint').textContent     = t('orb_hint');
+  document.getElementById('new-game-btn').textContent = t('new_game_btn');
+  document.getElementById('leaderboard-btn').textContent = t('leaderboard_btn');
+
+  // Continue button only when a save exists
+  const save = loadProgress();
+  const continueBtn = document.getElementById('continue-btn');
+  if (save) {
+    continueBtn.style.display = 'block';
+    continueBtn.textContent   = t('resume_btn', save.level);
+    continueBtn.onclick       = () => startGame(save);
+  } else {
+    continueBtn.style.display = 'none';
+  }
+
+  document.getElementById('new-game-btn').onclick = () => {
+    clearProgress();
+    startGame(null);
+  };
+  document.getElementById('leaderboard-btn').onclick = openLeaderboard;
+
+  renderAuthStatus();
+
+  // Pre-populate HUD so it isn't blank if briefly visible
+  updateHUD();
+}
+
+initStartScreen();
 
 </script>
 </body>
